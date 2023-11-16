@@ -1,0 +1,39 @@
+version: 0.2
+
+phases:
+  pre_build:
+    commands:
+      - CURRENT_DIR=$(pwd)
+      - SHA=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)
+      - echo Connecting to Amazon ECR...
+      - ECR_URI=${AccountId}.dkr.ecr.${RegionId}.amazonaws.com
+      - aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin $ECR_URI
+      - REPOSITORY_URI=$ECR_URI/${ECR_Name}
+      - IMAGE_TAG=$(echo build_$(echo `date -d '+7 hours' +%F`)_$(echo `date -d '+7 hours' +%T`) | awk ' { gsub (":", ".")} 1 ')
+
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - cd ${App_Folder}
+      ${BUILD_COMMAND}
+      - docker build --platform linux/amd64 -t $REPOSITORY_URI:latest .
+      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$IMAGE_TAG
+
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo Pushing the Docker images...
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
+      - echo Writing image definitions file...
+      - cd $CURRENT_DIR
+      - printf 'IMAGE_URI=%s\nIMAGE_TAG=%s\nHELM_IMAGE_TAG_PATH=%s\nHELM_IMAGE_URI_PATH=%s' $REPOSITORY_URI $IMAGE_TAG ${Helm_Image_Tag_Path} ${Helm_Image_Uri_Path} > .env
+      - cat .env
+
+cache:
+  paths:
+  - '/root/.m2/**/*'
+
+artifacts:
+  files: .env
