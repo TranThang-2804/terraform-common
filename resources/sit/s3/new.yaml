@@ -1,0 +1,4 @@
+
+s3:
+  name: "mybucket"
+  versioning: true 
