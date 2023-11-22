@@ -1,5 +1,0 @@
-
-s3:
-  name: "Thisisfortest"
-  versioning: 
-    enabled: true 
