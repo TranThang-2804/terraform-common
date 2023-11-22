@@ -1,3 +1,4 @@
 s3:
   name: "This-is-a-sample-bucket"
-  versioning: true 
+  versioning:
+    enabled: true
